@@ -24,7 +24,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
+#define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>

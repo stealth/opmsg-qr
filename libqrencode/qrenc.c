@@ -19,13 +19,16 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <getopt.h>
 #include <errno.h>
 
 #include "qrencode.h"
+#include "qrenc.h"
 
 #define INCHES_PER_METER (100.0/2.54)
 
@@ -33,34 +36,16 @@ static int casesensitive = 1;
 static int eightbit = 0;
 static int version = 0;
 static int size = 3;
-static int margin = -1;
-static int dpi = 72;
-static int structured = 0;
-static int rle = 0;
-static int svg_path = 0;
+static int margin = 2;
 static int micro = 0;
-static int inline_svg = 0;
-static QRecLevel level = QR_ECLEVEL_L;
+static QRecLevel level = QR_ECLEVEL_H;
 static QRencodeMode hint = QR_MODE_8;
-static unsigned char fg_color[4] = {0, 0, 0, 255};
-static unsigned char bg_color[4] = {255, 255, 255, 255};
+//static unsigned char fg_color[4] = {0, 0, 0, 255};
+//static unsigned char bg_color[4] = {255, 255, 255, 255};
 
 static int verbose = 0;
 
-enum imageType {
-	ANSI_TYPE,
-	ANSI256_TYPE,
-	ASCII_TYPE,
-	ASCIIi_TYPE,
-	UTF8_TYPE,
-	ANSIUTF8_TYPE,
-	ANSI256UTF8_TYPE,
-	UTF8i_TYPE,
-	ANSIUTF8i_TYPE
-};
-
-static enum imageType image_type = UTF8_TYPE;
-
+/*
 static int color_set(unsigned char color[4], const char *value)
 {
 	int len = strlen(value);
@@ -88,28 +73,8 @@ static int color_set(unsigned char color[4], const char *value)
 	}
 	return 0;
 }
+*/
 
-#define MAX_DATA_SIZE (7090 * 2) /* timed by the safty factor 2 */
-static unsigned char data_buffer[MAX_DATA_SIZE];
-static unsigned char *readFile(FILE *fp, int *length)
-{
-	int ret;
-
-	ret = fread(data_buffer, 1, MAX_DATA_SIZE, fp);
-	if(ret == 0) {
-		fprintf(stderr, "No input data.\n");
-		exit(EXIT_FAILURE);
-	}
-	if(feof(fp) == 0) {
-		fprintf(stderr, "Input data is too large.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	data_buffer[ret] = '\0';
-	*length = ret;
-
-	return data_buffer;
-}
 
 static FILE *openFile(const char *outfile)
 {
@@ -142,7 +107,7 @@ static void writeANSI_margin(FILE* fp, int realwidth,
 	}
 }
 
-static int writeANSI(const QRcode *qrcode, const char *outfile)
+static int writeANSI(const QRcode *qrcode, const char *outfile, enum imageType image_type)
 {
 	FILE *fp;
 	unsigned char *row, *p;
@@ -423,7 +388,7 @@ static QRcode *encode(const unsigned char *intext, int length)
 	return code;
 }
 
-static void qrencode(const unsigned char *intext, int length, const char *outfile)
+void qrencode(const unsigned char *intext, int length, const char *outfile, enum imageType image_type)
 {
 	QRcode *qrcode;
 
@@ -444,7 +409,7 @@ static void qrencode(const unsigned char *intext, int length, const char *outfil
 	switch(image_type) {
 		case ANSI_TYPE:
 		case ANSI256_TYPE:
-			writeANSI(qrcode, outfile);
+			writeANSI(qrcode, outfile, image_type);
 			break;
 		case ASCIIi_TYPE:
 			writeASCII(qrcode, outfile,  1);
@@ -488,7 +453,7 @@ static QRcode_List *encodeStructured(const unsigned char *intext, int length)
 	return list;
 }
 
-static void qrencodeStructured(const unsigned char *intext, int length, const char *outfile)
+void qrencodeStructured(const unsigned char *intext, int length, const char *outfile, enum imageType image_type)
 {
 	QRcode_List *qrlist, *p;
 	char filename[FILENAME_MAX];
@@ -558,7 +523,7 @@ static void qrencodeStructured(const unsigned char *intext, int length, const ch
 		switch(image_type) {
 			case ANSI_TYPE:
 			case ANSI256_TYPE:
-				writeANSI(p->code, filename);
+				writeANSI(p->code, filename, image_type);
 				break;
 			case ASCIIi_TYPE:
 				writeASCII(p->code, filename, 1);
@@ -597,30 +562,3 @@ static void qrencodeStructured(const unsigned char *intext, int length, const ch
 	QRcode_List_free(qrlist);
 }
 
-int main(int argc, char **argv)
-{
-	int opt, lindex = -1;
-	char *outfile = "/dev/stdout";
-	unsigned char *intext = "AAAAAAAAAAAAAAAAAAA";
-	int length = 0;
-
-	if(margin < 0) {
-		if(micro) {
-			margin = 2;
-		} else {
-			margin = 4;
-		}
-	}
-
-	if(structured) {
-		if(version == 0) {
-			fprintf(stderr, "Version must be specified to encode structured symbols.\n");
-			exit(EXIT_FAILURE);
-		}
-		qrencodeStructured(intext, length, outfile);
-	} else {
-		qrencode(intext, length, outfile);
-	}
-
-	return 0;
-}
