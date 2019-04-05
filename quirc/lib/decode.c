@@ -291,14 +291,14 @@ static void eloc_poly(uint8_t *omega,
 	}
 }
 
-static quirc_decode_error_t correct_block(uint8_t *data,
+static quirc_decode_error_t correct_block(uint8_t *data, size_t max,
 					  const struct quirc_rs_params *ecc)
 {
 	int npar = ecc->bs - ecc->dw;
-	uint8_t s[MAX_POLY];
-	uint8_t sigma[MAX_POLY];
-	uint8_t sigma_deriv[MAX_POLY];
-	uint8_t omega[MAX_POLY];
+	uint8_t s[MAX_POLY] = {0};
+	uint8_t sigma[MAX_POLY] = {0};
+	uint8_t sigma_deriv[MAX_POLY] = {0};
+	uint8_t omega[MAX_POLY] = {0};
 	int i;
 
 	/* Compute syndrome vector */
@@ -324,6 +324,9 @@ static quirc_decode_error_t correct_block(uint8_t *data,
 			uint8_t omega_x = poly_eval(omega, xinv, &gf256);
 			uint8_t error = gf256_exp[(255 - gf256_log[sd_x] +
 						   gf256_log[omega_x]) % 255];
+
+			if (ecc->bs - i - 1 < 0 || ecc->bs - i - 1 > max)
+				return QUIRC_ERROR_DATA_OVERFLOW;
 
 			data[ecc->bs - i - 1] ^= error;
 		}
@@ -536,6 +539,9 @@ static void read_bit(const struct quirc_code *code,
 	if (mask_bit(data->mask, i, j))
 		v ^= 1;
 
+	if (bytepos >= sizeof(ds->raw))
+		return;
+
 	if (v)
 		ds->raw[bytepos] |= (0x80 >> bitpos);
 
@@ -595,12 +601,19 @@ static quirc_decode_error_t codestream_ecc(struct quirc_data *data,
 		quirc_decode_error_t err;
 		int j;
 
+		// must fit in QUIRC_MAX_PAYLOAD
+		if (dst_offset >= sizeof(ds->data) || ecc->dw >= sizeof(ds->data) ||
+		    num_ec >= sizeof(ds->data) || num_ec < 0 || ecc->dw < 0 ||
+		    dst_offset + ecc->dw >= sizeof(ds->data) ||
+		    dst_offset + num_ec >= sizeof(ds->data))
+			return QUIRC_ERROR;
+
 		for (j = 0; j < ecc->dw; j++)
 			dst[j] = ds->raw[j * bc + i];
 		for (j = 0; j < num_ec; j++)
 			dst[ecc->dw + j] = ds->raw[ecc_offset + j * bc + i];
 
-		err = correct_block(dst, ecc);
+		err = correct_block(dst, sizeof(ds->data) - dst_offset, ecc);
 		if (err)
 			return err;
 
@@ -647,6 +660,10 @@ static int numeric_tuple(struct quirc_data *data,
 		return -1;
 
 	tuple = take_bits(ds, bits);
+
+	if (digits - 1 < 0 || digits >= sizeof(data->payload) ||
+	    digits - 1 + data->payload_len >= sizeof(data->payload))
+		return -1;
 
 	for (i = digits - 1; i >= 0; i--) {
 		data->payload[data->payload_len + i] = tuple % 10 + '0';
@@ -704,6 +721,10 @@ static int alpha_tuple(struct quirc_data *data,
 		return -1;
 
 	tuple = take_bits(ds, bits);
+
+	if (digits >= sizeof(data->payload) || digits < 0 ||
+	    data->payload_len + digits - 1 >= sizeof(data->payload))
+		return -1;
 
 	for (i = 0; i < digits; i++) {
 		static const char *alpha_map =
@@ -783,7 +804,7 @@ static quirc_decode_error_t decode_kanji(struct quirc_data *data,
 		bits = 10;
 
 	count = take_bits(ds, bits);
-	if (data->payload_len + count * 2 + 1 > QUIRC_MAX_PAYLOAD)
+	if (count > QUIRC_MAX_PAYLOAD || data->payload_len + count * 2 + 1 > QUIRC_MAX_PAYLOAD)
 		return QUIRC_ERROR_DATA_OVERFLOW;
 	if (bits_remaining(ds) < count * 13)
 		return QUIRC_ERROR_DATA_UNDERFLOW;

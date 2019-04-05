@@ -789,10 +789,13 @@ static int fitness_all(const struct quirc *q, int index)
 
 static void jiggle_perspective(struct quirc *q, int index)
 {
+	if (index >= sizeof(q->grids) || index <= 0)
+		return;
+
 	struct quirc_grid *qr = &q->grids[index];
 	int best = fitness_all(q, index);
 	int pass;
-	double adjustments[8];
+	double adjustments[8] = {0};
 	int i;
 
 	for (i = 0; i < 8; i++)
@@ -810,6 +813,9 @@ static void jiggle_perspective(struct quirc *q, int index)
 				new = old + step;
 			else
 				new = old - step;
+
+			if (j >= sizeof(qr->c))
+				return;
 
 			qr->c[j] = new;
 			test = fitness_all(q, index);
@@ -1147,3 +1153,4 @@ void quirc_extract(const struct quirc *q, int index,
 		}
 	}
 }
+
