@@ -26,7 +26,6 @@
 #include "mjpeg.h"
 #include "convert.h"
 #include "dthash.h"
-#include "demoutil.h"
 
 static int printer_timeout = 1;
 

@@ -27,7 +27,6 @@ DEMO_OBJ = \
     demo/mjpeg.o \
     demo/convert.o \
     demo/dthash.o \
-    demo/demoutil.o\
     demo/scanner.o
 
 all: libquirc.a

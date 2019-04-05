@@ -77,7 +77,7 @@ int do_import(const string &camera, int dry, const string &name)
 	if (dry)
 		return 0;
 
-	if (pem.find(marker::pub_begin) != 0 || pem.find(marker::pub_end) + marker::pub_end.size() != pem.size()) {
+	if (pem.find(marker::pub_begin) != 0 || pem.find(marker::pub_end) + marker::pub_end.size() + 1 != pem.size()) {
 		fprintf(stderr, "Invalid pubkey. Not importing.\n");
 		return -1;
 	}
@@ -137,8 +137,11 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	while ((c = getopt_long(argc, argv, "hq:i:PC:d", lopts, &opt_idx)) != -1) {
+	while ((c = getopt_long(argc, argv, "c:hq:i:PC:d", lopts, &opt_idx)) != -1) {
 		switch (c) {
+		case 'c':
+			// already handled
+			break;
 		case 'q':
 			hexid = optarg;
 			break;
