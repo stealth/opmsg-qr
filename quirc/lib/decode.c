@@ -606,7 +606,7 @@ static quirc_decode_error_t codestream_ecc(struct quirc_data *data,
 		    num_ec >= sizeof(ds->data) || num_ec < 0 || ecc->dw < 0 ||
 		    dst_offset + ecc->dw >= sizeof(ds->data) ||
 		    dst_offset + num_ec >= sizeof(ds->data))
-			return QUIRC_ERROR;
+			return QUIRC_ERROR_DATA_OVERFLOW;
 
 		for (j = 0; j < ecc->dw; j++)
 			dst[j] = ds->raw[j * bc + i];

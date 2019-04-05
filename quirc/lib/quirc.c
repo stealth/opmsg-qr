@@ -57,7 +57,7 @@ int quirc_resize(struct quirc *q, int w, int h)
 	 * both the API and ABI. Thus, at the moment, let's just do a sanity
 	 * check.
 	 */
-	if (w <= 0 || h <= 0 || w >= 0xffffffff/h || h >= 0xffffffff/w)
+	if (w < 0 || h < 0 || (h > 0 && w >= 0xffffffff/h) || (w > 0 && h >= 0xffffffff/w))
 		goto fail;
 
 	/*
@@ -70,7 +70,7 @@ int quirc_resize(struct quirc *q, int w, int h)
 
 	/* compute the "old" (i.e. currently allocated) and the "new"
 	   (i.e. requested) image dimensions */
-	if (q->h <= 0 || q->w <= 0 || q->w >= 0xffffffff/q->h || q->h >= 0xffffffff/q->w)
+	if (q->h < 0 || q->w < 0 || (q->h > 0 && q->w >= 0xffffffff/q->h) || (q->w > 0 && q->h >= 0xffffffff/q->w))
 		goto fail;
 
 	size_t olddim = q->w * q->h;
