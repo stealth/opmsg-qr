@@ -27,16 +27,14 @@ DEMO_OBJ = \
     demo/mjpeg.o \
     demo/convert.o \
     demo/dthash.o \
-    demo/demoutil.o
+    demo/demoutil.o\
+    demo/scanner.o
 
-all: libquirc.a quirc-scanner
+all: libquirc.a
 
-quirc-scanner: $(DEMO_OBJ) demo/scanner.o libquirc.a
-	$(CC) -o $@ $(DEMO_OBJ) demo/scanner.o libquirc.a $(LDFLAGS) -lm -ljpeg
-
-libquirc.a: $(LIB_OBJ)
+libquirc.a: $(LIB_OBJ) $(DEMO_OBJ)
 	rm -f $@
-	ar cr $@ $(LIB_OBJ)
+	ar cr $@ $(LIB_OBJ) $(DEMO_OBJ)
 	ranlib $@
 
 .c.o:

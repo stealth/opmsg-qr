@@ -18,6 +18,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <quirc.h>
+#include <string.h>
 #include <time.h>
 #include <getopt.h>
 
@@ -27,15 +28,10 @@
 #include "dthash.h"
 #include "demoutil.h"
 
-/* Collected command-line arguments */
-static const char *camera_path = "/dev/video2";
-static int video_width = 640;
-static int video_height = 480;
-static int want_verbose = 0;
 static int printer_timeout = 1;
 
 static int main_loop(struct camera *cam,
-		     struct quirc *q, struct mjpeg_decoder *mj)
+		     struct quirc *q, struct mjpeg_decoder *mj, char **result, size_t *reslen)
 {
 	struct dthash dt;
 
@@ -83,13 +79,22 @@ static int main_loop(struct camera *cam,
 			struct quirc_data data;
 
 			quirc_extract(q, i, &code);
-			if (!quirc_decode(&code, &data))
-				print_data(&data, &dt, want_verbose);
+			if (!quirc_decode(&code, &data)) {
+				if (data.payload_len <= 0 || data.payload_len > sizeof(data.payload))
+					return -1;
+				*result = malloc(data.payload_len);
+				if (*result) {
+					memcpy(*result, data.payload, data.payload_len);
+					*reslen = data.payload_len;
+				}
+				return 0;
+			}
 		}
 	}
 }
 
-static int run_scanner(void)
+
+int quirc_scan(const char *camera_path, int video_width, int video_height, char **result, size_t *reslen)
 {
 	struct quirc *qr;
 	struct camera cam;
@@ -132,7 +137,7 @@ static int run_scanner(void)
 	}
 
 	mjpeg_init(&mj);
-	if (main_loop(&cam, qr, &mj) < 0)
+	if (main_loop(&cam, qr, &mj, result, reslen) < 0)
 		goto fail_main_loop;
 	mjpeg_free(&mj);
 
@@ -151,64 +156,3 @@ fail_qr:
 	return -1;
 }
 
-static void usage(const char *progname)
-{
-	printf("Usage: %s [options]\n\n"
-"Valid options are:\n\n"
-"    -v             Show extra data for detected codes.\n"
-"    -d <device>    Specify camera device path.\n"
-"    -s <WxH>       Specify video dimensions.\n"
-"    -p <timeout>   Set printer timeout (seconds).\n"
-"    --help         Show this information.\n"
-"    --version      Show library version information.\n",
-	progname);
-}
-
-int main(int argc, char **argv)
-{
-	static const struct option longopts[] = {
-		{"help",		0, 0, 'H'},
-		{"version",		0, 0, 'V'},
-		{NULL,			0, 0, 0}
-	};
-	int opt;
-
-	printf("quirc scanner demo\n");
-	printf("Copyright (C) 2010-2012 Daniel Beer <dlbeer@gmail.com>\n");
-	printf("\n");
-
-	while ((opt = getopt_long(argc, argv, "d:s:vg:p:",
-				  longopts, NULL)) >= 0)
-		switch (opt) {
-		case 'V':
-			printf("Library version: %s\n", quirc_version());
-			return 0;
-
-		case 'H':
-			usage(argv[0]);
-			return 0;
-
-		case 'v':
-			want_verbose = 1;
-			break;
-
-		case 's':
-			if (parse_size(optarg, &video_width, &video_height) < 0)
-				return -1;
-			break;
-
-		case 'p':
-			printer_timeout = atoi(optarg);
-			break;
-
-		case 'd':
-			camera_path = optarg;
-			break;
-
-		case '?':
-			fprintf(stderr, "Try --help for usage information\n");
-			return -1;
-		}
-
-	return run_scanner();
-}
