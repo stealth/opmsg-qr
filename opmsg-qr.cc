@@ -77,6 +77,11 @@ int do_import(const string &camera, int dry, const string &name)
 	if (dry)
 		return 0;
 
+	if (pem.find(marker::pub_begin) != 0 || pem.find(marker::pub_end) + marker::pub_end.size() != pem.size()) {
+		fprintf(stderr, "Invalid pubkey. Not importing.\n");
+		return -1;
+	}
+
 	keystore ks(config::phash, config::cfgbase);
 
 	persona *p = nullptr;
@@ -106,15 +111,25 @@ int main(int argc, char **argv)
 		{"help", no_argument, nullptr, 'h'},
 	        {"qr", required_argument, nullptr, 'q'},
 	        {"import", required_argument, nullptr, 'i'},
-	        {"pem", no_argument, nullptr, 'p'},
+	        {"nopem", no_argument, nullptr, 'P'},
 	        {"camera", required_argument, nullptr, 'C'},
 	        {"dry", no_argument, nullptr, 'd'},
 	        {nullptr, 0, nullptr, 0}};
-	int c = 0, opt_idx = 0, dump_pem = 0, dry = 0;
+	int c = 0, opt_idx = 0, dump_pem = 1, dry = 0;
 
 	if (getenv("HOME")) {
 		config::cfgbase = getenv("HOME");
 		config::cfgbase += "/.opmsg";
+	}
+
+	if (argc == 1)
+		usage(argv[0]);
+
+	if (strcmp(argv[1], "-c") == 0 || strcmp(argv[1], "--confdir") == 0) {
+		if (!argv[2])
+			usage(argv[0]);
+		if (strcmp(argv[2], "") != 0)
+			config::cfgbase = argv[2];
 	}
 
 	if (parse_config(config::cfgbase) < 0) {
@@ -122,13 +137,13 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	while ((c = getopt_long(argc, argv, "hq:i:pC:d", lopts, &opt_idx)) != -1) {
+	while ((c = getopt_long(argc, argv, "hq:i:PC:d", lopts, &opt_idx)) != -1) {
 		switch (c) {
 		case 'q':
 			hexid = optarg;
 			break;
-		case 'p':
-			dump_pem = 1;
+		case 'P':
+			dump_pem = 0;
 			break;
 		case 'i':
 			import = optarg;
