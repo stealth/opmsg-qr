@@ -33,7 +33,7 @@
 #define INCHES_PER_METER (100.0/2.54)
 
 static int casesensitive = 1;
-static int eightbit = 0;
+static int eightbit = 1;
 static int version = 0;
 static int size = 3;
 static int margin = 2;

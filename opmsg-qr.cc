@@ -22,7 +22,9 @@
 #include <memory>
 #include <unistd.h>
 #include <getopt.h>
+#include <algorithm>
 #include "qrenc.h"
+#include "base64.h"
 #include "keystore.h"
 #include "config.h"
 #include "misc.h"
@@ -69,18 +71,30 @@ int do_import(const string &camera, int dry, const string &name)
 	if (quirc_scan(camera.c_str(), 1280, 720, &result, &reslen) < 0)
 		return -1;
 
-	string pem = string(result, reslen);
+	string bin = string(result, reslen);
 	free(result);
 
+	if (bin.size() < 4 || bin.find("pub1") != 0) {
+		fprintf(stderr, "Invalid encoding.\n");
+		return -1;
+	}
+	bin.erase(0, 4);
+
+	string pem = "", pem_nl = "";
+	pem = b64_encode(bin, pem);
+
+	// RFC7468 (PEM): the base64 lines must be wrapped by newline after exactly 64 chars,
+	// except the last line
+	for (string::size_type idx = 0; idx < pem.size();) {
+		pem_nl += pem.substr(idx, 64) + "\n";
+		idx += 64;
+	}
+
+	pem = marker::pub_begin + pem_nl + marker::pub_end + "\n";
 	printf("\n%s\n", pem.c_str());
 
 	if (dry)
 		return 0;
-
-	if (pem.find(marker::pub_begin) != 0 || pem.find(marker::pub_end) + marker::pub_end.size() + 1 != pem.size()) {
-		fprintf(stderr, "Invalid pubkey. Not importing.\n");
-		return -1;
-	}
 
 	keystore ks(config::phash, config::cfgbase);
 
@@ -173,7 +187,17 @@ int main(int argc, char **argv)
 		if (dump_pem)
 			printf("%s\n\n",  pub_pem.c_str());
 
-		qrencode(reinterpret_cast<const unsigned char *>(pub_pem.c_str()), pub_pem.size(), outfile, UTF8_TYPE);
+		auto idx1 = pub_pem.find(marker::pub_begin), idx2 = pub_pem.find(marker::pub_end);
+		if (idx1 == string::npos || idx2 == string::npos || idx2 <= idx1) {
+			fprintf(stderr, "Key not in PEM format.\n");
+			return -1;
+		}
+
+		auto b64 = pub_pem.substr(idx1 + marker::pub_begin.size(), idx2 - (idx1 + marker::pub_begin.size()));
+		b64.erase(remove(b64.begin(), b64.end(), '\n'), b64.end());
+		string pub_bin = "";
+		pub_bin = "pub1" + b64_decode(b64, pub_bin);
+		qrencode(reinterpret_cast<const unsigned char *>(pub_bin.c_str()), pub_bin.size(), outfile, UTF8_TYPE);
 		printf("\n");
 
 	} else if (import.size() > 0) {
