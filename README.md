@@ -30,6 +30,9 @@ Alternatively you may edit the `$OPMSG` variable inside the `Makefile`.
 You will need `libcrypto` from *OpenSSL* or *LibreSSL* and `libjpeg` for a
 successful build.
 
+If you already cloned the `opmsg` repo before, do not forget to `git pull`
+and `make -C src clean` as the initial step, instead of the `git clone ...`.
+
 Run
 ---
 
