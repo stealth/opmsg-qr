@@ -1,6 +1,6 @@
 
 
-OPMSG=`pwd`/../opmsg/src
+OPMSG=`pwd`/../src
 
 CXX=c++
 CXXFLAGS=-Wall -O2 -pedantic -std=c++11

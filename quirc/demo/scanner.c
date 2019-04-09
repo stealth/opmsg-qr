@@ -107,7 +107,7 @@ int quirc_scan(const char *camera_path, int video_width, int video_height, char 
 		goto fail_qr;
 	}
 
-	if (camera_map(&cam, 8) < 0) {
+	if (camera_map(&cam, 4) < 0) {
 		perror("camera_map");
 		goto fail_qr;
 	}

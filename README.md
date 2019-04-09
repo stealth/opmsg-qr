@@ -1,7 +1,7 @@
 opmsg-qr
 ========
 
-`opmsg-qr` is a conveniance tool which allows to dump and import opmsg
+`opmsg-qr` is a convenience tool which allows to dump and import opmsg
 personas as QR codes. The QR code, representing the public key of this
 persona, will be printed on `stdout` as *UTF8*. It may then be snapped with
 your smartphone and sent across a *Signal* or other secure channels. The
@@ -42,7 +42,7 @@ opmsg-qr v0.2 (C) 2019 Sebastian Krahmer: https://github.com/stealth/opmsg-qr
 
 
 Usage: opmsg-qr [--confdir dir] [--help] [--qr hexid] [--import name] [--nopem]
-		[--camera device] [--dry] [--phash algo]
+		[--camera device] [--dry] [--invert] [--phash algo]
 
 	--confdir,	-c	(must come first) defaults to ~/.opmsg
 	--help,		-h	this help
@@ -51,9 +51,8 @@ Usage: opmsg-qr [--confdir dir] [--help] [--qr hexid] [--import name] [--nopem]
 	--nopem,	-P	do not print PEM key, just QR code
 	--camera,	-C	use this camera device (defaults to /dev/video0)
 	--dry,		-d	don't actually import, just decode and show PEM key
+	--invert,	-I	invert black/white for terminals with white background color
 	--phash,	-p	use this persona hash algo (defaults to sha256)
-
-
 
 $ opmsg-qr -q a6da74f688c375d8
 
@@ -94,6 +93,15 @@ TYn4q3gcm7e/PO7gdJ/iq9SzRgDZd/NesHAFhdfdgb7OQZNmHPoJL9+J
 
 ```
 
+You should use a camera with auto-focus. Not using auto-focus makes it very
+painful to impossible to capture the QR code from the phone screen. Do not make
+the picture with your phone too close to the screen. It's better to have the QR
+code smaller with the possibility to zoom, instead of having the
+border on the edged screen.
+
+The parameters for dumping the QR-code on the screen are set to black/dark
+UTF8 terminals like *xterm*. If you are using white background, you have
+to `--invert` the printing.
 
 3rd party code
 --------------

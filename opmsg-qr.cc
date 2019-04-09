@@ -113,7 +113,7 @@ int do_import(const string &camera, int dry, const string &name)
 void usage(const char *p)
 {
 	printf("\nUsage: opmsg-qr [--confdir dir] [--help] [--qr hexid] [--import name] [--nopem]\n"
-	       "\t\t[--camera device] [--dry] [--phash algo]\n\n"
+	       "\t\t[--camera device] [--dry] [--invert] [--phash algo]\n\n"
                "\t--confdir,\t-c\t(must come first) defaults to ~/.opmsg\n"
 	       "\t--help,\t\t-h\tthis help\n"
 	       "\t--qr, \t\t-q\tshow QR code of this persona id\n"
@@ -121,6 +121,7 @@ void usage(const char *p)
 	       "\t--nopem,\t-P\tdo not print PEM key, just QR code\n"
 	       "\t--camera,\t-C\tuse this camera device (defaults to /dev/video0)\n"
 	       "\t--dry,\t\t-d\tdon't actually import, just decode and show PEM key\n"
+	       "\t--invert,\t-I\tinvert black/white for terminals with white background color\n"
 	       "\t--phash,\t-p\tuse this persona hash algo (defaults to sha256)\n\n");
 	exit(-1);
 }
@@ -131,6 +132,7 @@ int main(int argc, char **argv)
 	const string banner = "\nopmsg-qr v0.2 (C) 2019 Sebastian Krahmer: https://github.com/stealth/opmsg-qr\n\n";
 	const char *outfile = "/dev/stdout";
 	string hexid = "", pub_pem = "", camera = "/dev/video0", import = "";
+	enum imageType itype = UTF8_TYPE;
 	struct option lopts[] = {
 	        {"confdir", required_argument, nullptr, 'c'},
 		{"help", no_argument, nullptr, 'h'},
@@ -140,6 +142,7 @@ int main(int argc, char **argv)
 	        {"camera", required_argument, nullptr, 'C'},
 	        {"dry", no_argument, nullptr, 'd'},
 	        {"phash", required_argument, nullptr, 'p'},
+	        {"invert", no_argument, nullptr, 'I'},
 	        {nullptr, 0, nullptr, 0}};
 	int c = 0, opt_idx = 0, dump_pem = 1, dry = 0;
 
@@ -165,7 +168,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	while ((c = getopt_long(argc, argv, "c:hq:i:PC:dp:", lopts, &opt_idx)) != -1) {
+	while ((c = getopt_long(argc, argv, "c:hq:i:PC:dp:I", lopts, &opt_idx)) != -1) {
 		switch (c) {
 		case 'c':
 			// already handled
@@ -187,6 +190,9 @@ int main(int argc, char **argv)
 			break;
 		case 'p':
 			config::phash = optarg;
+			break;
+		case 'I':
+			itype = UTF8i_TYPE;
 			break;
 		case 'h':
 		default:
@@ -216,7 +222,7 @@ int main(int argc, char **argv)
 		b64.erase(remove(b64.begin(), b64.end(), '\n'), b64.end());
 		string pub_bin = "";
 		pub_bin = "pub1" + b64_decode(b64, pub_bin);
-		qrencode(reinterpret_cast<const unsigned char *>(pub_bin.c_str()), pub_bin.size(), outfile, UTF8_TYPE);
+		qrencode(reinterpret_cast<const unsigned char *>(pub_bin.c_str()), pub_bin.size(), outfile, itype);
 		printf("\n");
 
 	} else if (import.size() > 0) {
