@@ -1,8 +1,8 @@
 /*
  * This file is part of the opmsg crypto message framework.
  *
- * (C) 2019 by Sebastian Krahmer,
- *             sebastian [dot] krahmer [at] gmail [dot] com
+ * (C) 2019-2020 by Sebastian Krahmer,
+ *                  sebastian [dot] krahmer [at] gmail [dot] com
  *
  * opmsg is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ int get_persona(const string &hexid, string &pub_pem)
 }
 
 
-int do_import(const string &camera, int dry, const string &name)
+int do_import(const string &camera, int dry, const string &name, int width, int heigth)
 {
 	char *result = nullptr;
 	size_t reslen = 0;
@@ -68,7 +68,7 @@ int do_import(const string &camera, int dry, const string &name)
 	printf("\nImporting with name %s and phash %s\n", name.c_str(), config::phash.c_str());
 	printf("Put QR Code in front of camera %s\n", camera.c_str());
 
-	if (quirc_scan(camera.c_str(), 1280, 720, &result, &reslen) < 0)
+	if (quirc_scan(camera.c_str(), width, heigth, &result, &reslen) < 0)
 		return -1;
 
 	string bin = string(result, reslen);
@@ -91,7 +91,7 @@ int do_import(const string &camera, int dry, const string &name)
 	}
 
 	pem = marker::pub_begin + pem_nl + marker::pub_end + "\n";
-	printf("\n%s\n", pem.c_str());
+	printf("\n\n%s\n", pem.c_str());
 
 	if (dry)
 		return 0;
@@ -113,15 +113,18 @@ int do_import(const string &camera, int dry, const string &name)
 void usage(const char *p)
 {
 	printf("\nUsage: opmsg-qr [--confdir dir] [--help] [--qr hexid] [--import name] [--nopem]\n"
-	       "\t\t[--camera device] [--dry] [--invert] [--phash algo]\n\n"
+	       "\t\t[--camera device] [--dry] [--invert] [--phash algo] [-x width]\n"
+	       "\t\t[-y height]\n\n"
                "\t--confdir,\t-c\t(must come first) defaults to ~/.opmsg\n"
 	       "\t--help,\t\t-h\tthis help\n"
 	       "\t--qr, \t\t-q\tshow QR code of this persona id\n"
 	       "\t--import,\t-i\timport QR code as persona with this name\n"
 	       "\t--nopem,\t-P\tdo not print PEM key, just QR code\n"
+	       "\t--width,\t-x\tcamera resolution (640)\n"
+	       "\t--height,\t-y\tcamera resolution (480)\n"
 	       "\t--camera,\t-C\tuse this camera device (defaults to /dev/video0)\n"
-	       "\t--dry,\t\t-d\tdon't actually import, just decode and show PEM key\n"
-	       "\t--invert,\t-I\tinvert black/white for terminals with white background color\n"
+	       "\t--dry,\t\t-d\tdon't import, just decode and show PEM key\n"
+	       "\t--invert,\t-I\tinvert color for terminals with white background\n"
 	       "\t--phash,\t-p\tuse this persona hash algo (defaults to sha256)\n\n");
 	exit(-1);
 }
@@ -129,9 +132,10 @@ void usage(const char *p)
 
 int main(int argc, char **argv)
 {
-	const string banner = "\nopmsg-qr v0.2 (C) 2019 Sebastian Krahmer: https://github.com/stealth/opmsg-qr\n\n";
+	const string banner = "\nopmsg-qr v0.21 (C) 2020 Sebastian Krahmer: https://github.com/stealth/opmsg-qr\n\n";
 	const char *outfile = "/dev/stdout";
 	string hexid = "", pub_pem = "", camera = "/dev/video0", import = "";
+	int width = 640, heigth = 480;
 	enum imageType itype = UTF8_TYPE;
 	struct option lopts[] = {
 	        {"confdir", required_argument, nullptr, 'c'},
@@ -140,6 +144,8 @@ int main(int argc, char **argv)
 	        {"import", required_argument, nullptr, 'i'},
 	        {"nopem", no_argument, nullptr, 'P'},
 	        {"camera", required_argument, nullptr, 'C'},
+	        {"width", required_argument, nullptr, 'x'},
+	        {"heigth", required_argument, nullptr, 'y'},
 	        {"dry", no_argument, nullptr, 'd'},
 	        {"phash", required_argument, nullptr, 'p'},
 	        {"invert", no_argument, nullptr, 'I'},
@@ -168,7 +174,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	while ((c = getopt_long(argc, argv, "c:hq:i:PC:dp:I", lopts, &opt_idx)) != -1) {
+	while ((c = getopt_long(argc, argv, "c:hq:i:PC:dp:Ix:y:", lopts, &opt_idx)) != -1) {
 		switch (c) {
 		case 'c':
 			// already handled
@@ -185,6 +191,12 @@ int main(int argc, char **argv)
 		case 'C':
 			camera = optarg;
 			break;
+		case 'x':
+			width = static_cast<int>(strtoul(optarg, nullptr, 10));
+			break;
+		case 'y':
+			heigth = static_cast<int>(strtoul(optarg, nullptr, 10));
+			break;
 		case 'd':
 			dry = 1;
 			break;
@@ -200,6 +212,8 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
+
+	setvbuf(stdout, nullptr, _IONBF, 0);
 
 	if (hexid.size() > 0) {
 		if (get_persona(hexid, pub_pem)) {
@@ -226,7 +240,7 @@ int main(int argc, char **argv)
 		printf("\n");
 
 	} else if (import.size() > 0) {
-		if (do_import(camera, dry, import) < 0) {
+		if (do_import(camera, dry, import, width, heigth) < 0) {
 			fprintf(stderr, "Failed to import QR code.\n");
 			return -1;
 		}

@@ -72,7 +72,13 @@ static int main_loop(struct camera *cam,
 
 		quirc_end(q);
 
-		count = quirc_count(q);
+		if ((count = quirc_count(q)) == 0)
+			printf("?");
+		else if (count == 1)
+			printf("!");
+		else
+			printf("-");
+
 		for (i = 0; i < count; i++) {
 			struct quirc_code code;
 			struct quirc_data data;

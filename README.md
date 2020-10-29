@@ -41,25 +41,28 @@ You should run it only on a UTF8 terminal.
 ```
 $ opmsg-qr
 
-opmsg-qr v0.2 (C) 2019 Sebastian Krahmer: https://github.com/stealth/opmsg-qr
+opmsg-qr v0.21 (C) 2020 Sebastian Krahmer: https://github.com/stealth/opmsg-qr
 
 
 Usage: opmsg-qr [--confdir dir] [--help] [--qr hexid] [--import name] [--nopem]
-		[--camera device] [--dry] [--invert] [--phash algo]
+		[--camera device] [--dry] [--invert] [--phash algo] [-x width] [-y height]
 
 	--confdir,	-c	(must come first) defaults to ~/.opmsg
 	--help,		-h	this help
 	--qr, 		-q	show QR code of this persona id
 	--import,	-i	import QR code as persona with this name
 	--nopem,	-P	do not print PEM key, just QR code
+	--width,	-x	camera resolution (640)
+	--height,	-y	camera resolution (480)
 	--camera,	-C	use this camera device (defaults to /dev/video0)
 	--dry,		-d	don't actually import, just decode and show PEM key
 	--invert,	-I	invert black/white for terminals with white background color
 	--phash,	-p	use this persona hash algo (defaults to sha256)
 
+
 $ opmsg-qr -q a6da74f688c375d8
 
-opmsg-qr v0.2 (C) 2019 Sebastian Krahmer: https://github.com/stealth/opmsg-qr
+opmsg-qr v0.21 (C) 2020 Sebastian Krahmer: https://github.com/stealth/opmsg-qr
 
 
 a6da74f688c375d896858709ffd1a25fd42e6523bb89d0f245cfe554cf7b4e7c nobrainer
@@ -102,9 +105,24 @@ the picture with your phone too close to the screen. It's better to have the QR
 code smaller with the possibility to zoom, instead of having the
 border on the edged screen.
 
-The parameters for dumping the QR-code on the screen are set to black/dark
-UTF8 terminals like *xterm*. If you are using white background, you have
-to `--invert` the printing.
+While importing, `opmsg-qr` will try to help you finding the right distance
+and angle for the camera. It prints `?` if it can't detect anything. If you
+see '!', there is already something that the QR-reader can detect. In that case
+you need to keep the camera/phone stable or only slightly adjust it.
+
+*Important:* The parameters for dumping the QR-code on the screen are set to black/dark
+UTF8 terminals like *xterm* (for example with black or blue background color).
+If you are using white background, you have to `--invert` the printing,
+in order to have the QR blocks properly colored for detection.
+
+The `-x` and `-y` parameters are very likely not necessary to be changed.
+
+After all, webcams have usually less resolution and quality than high end
+smartphone cams, so the user experience when scanning QR codes with webcams,
+is somewhat different than with smartphone apps. You can test your cam
+at the console with vlc like `vlc v4l2:///dev/video0` and check how fast/slow
+your autofocus is.
+
 
 3rd party code
 --------------
