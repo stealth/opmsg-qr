@@ -107,7 +107,7 @@ border on the edged screen.
 
 While importing, `opmsg-qr` will try to help you finding the right distance
 and angle for the camera. It prints `?` if it can't detect anything. If you
-see '!', there is already something that the QR-reader can detect. In that case
+see `!`, there is already something that the QR-reader can detect. In that case
 you need to keep the camera/phone stable or only slightly adjust it.
 
 *Important:* The parameters for dumping the QR-code on the screen are set to black/dark
