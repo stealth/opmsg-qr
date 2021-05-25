@@ -1,7 +1,7 @@
 /*
  * This file is part of the opmsg crypto message framework.
  *
- * (C) 2019-2020 by Sebastian Krahmer,
+ * (C) 2019-2021 by Sebastian Krahmer,
  *                  sebastian [dot] krahmer [at] gmail [dot] com
  *
  * opmsg is free software: you can redistribute it and/or modify
@@ -132,7 +132,7 @@ void usage(const char *p)
 
 int main(int argc, char **argv)
 {
-	const string banner = "\nopmsg-qr v0.21 (C) 2020 Sebastian Krahmer: https://github.com/stealth/opmsg-qr\n\n";
+	const string banner = "\nopmsg-qr v0.30 (C) 2021 Sebastian Krahmer: https://github.com/stealth/opmsg-qr\n\n";
 	const char *outfile = "/dev/stdout";
 	string hexid = "", pub_pem = "", camera = "/dev/video0", import = "";
 	int width = 640, heigth = 480;
